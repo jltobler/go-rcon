@@ -3,7 +3,7 @@ package packet
 import "testing"
 
 func TestMarshalAndUnmarshal(t *testing.T) {
-	p := New(1, Command, "test")
+	p := New(Command, "test")
 
 	data, err := Marshal(p)
 	if err != nil {

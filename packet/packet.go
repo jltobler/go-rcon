@@ -16,23 +16,32 @@ const (
 	Login
 	_
 	Termination
+	TerminalResponse = "Unknown request 5"
+)
+
+// Packet IDs are typically incremented sequentially. Count tracks
+// the current ID and is incremented when a new Packet is created.
+var (
+	count int32 = 0
 )
 
 type Kind uint32
 
-// Packet defines RCON protocol encoding
+// Packet defines RCON protocol encoding.
 type Packet struct {
 	Length  uint32
-	ID      uint32
+	ID      int32
 	Kind    Kind
 	Payload string
 }
 
-// New creates and returns a Packet
-func New(id uint32, kind Kind, payload string) *Packet {
+// New creates and returns a Packet. Packet length and ID
+// are automatically set to satisfy protocol requirements.
+func New(kind Kind, payload string) *Packet {
+	count++
 	return &Packet{
 		Length:  uint32(len(payload)+10),
-		ID:      id,
+		ID:      count,
 		Kind:    kind,
 		Payload: payload,
 	}
@@ -43,6 +52,10 @@ func New(id uint32, kind Kind, payload string) *Packet {
 func Marshal(p *Packet) ([]byte, error) {
 	if p == nil {
 		return nil, errors.New("nil packet provided")
+	}
+
+	if p.Length != uint32(len(p.Payload)+10) {
+		return nil, errors.New("invalid packet provided")
 	}
 
 	for i := 0; i < len(p.Payload); i++ {
@@ -57,7 +70,7 @@ func Marshal(p *Packet) ([]byte, error) {
 	binary.LittleEndian.PutUint32(b, p.Length)
 	buf.Write(b)
 
-	binary.LittleEndian.PutUint32(b, p.ID)
+	binary.LittleEndian.PutUint32(b, uint32(p.ID))
 	buf.Write(b)
 
 	binary.LittleEndian.PutUint32(b, uint32(p.Kind))
@@ -78,6 +91,8 @@ func Unmarshal(data []byte, p *Packet) error {
 		return errors.New("nil packet provided")
 	}
 
+	// The minimum length of a RCON packet is 14 bytes and is terminated with two
+	// null bytes at the end. All packets not following this are considered invalid.
 	if len(data) < 14 || data[len(data)-1] != 0 || data[len(data)-2] != 0 {
 		return errors.New("invalid packet bytes")
 	}
@@ -87,21 +102,9 @@ func Unmarshal(data []byte, p *Packet) error {
 		return errors.New("incorrect packet length")
 	}
 
-	id := binary.LittleEndian.Uint32(data[4:8])
+	id := int32(binary.LittleEndian.Uint32(data[4:8]))
 
-	var kind Kind
-	switch binary.LittleEndian.Uint32(data[8:12]) {
-	case 0:
-		kind = Response
-	case 2:
-		kind = Command
-	case 3:
-		kind = Login
-	case 5:
-		kind = Termination
-	default:
-		return errors.New("invalid packet type")
-	}
+	kind := Kind(binary.LittleEndian.Uint32(data[8:12]))
 
 	buf := strings.Builder{}
 	b := data[12:len(data)-2]
