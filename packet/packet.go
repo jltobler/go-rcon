@@ -40,7 +40,7 @@ type Packet struct {
 func New(kind Kind, payload string) *Packet {
 	count++
 	return &Packet{
-		Length:  uint32(len(payload)+10),
+		Length:  uint32(len(payload) + 10),
 		ID:      count,
 		Kind:    kind,
 		Payload: payload,
@@ -78,7 +78,7 @@ func Marshal(p *Packet) ([]byte, error) {
 
 	buf.WriteString(p.Payload)
 
-	buf.Write([]byte{0,0})
+	buf.Write([]byte{0, 0})
 
 	return buf.Bytes(), nil
 }
@@ -107,7 +107,7 @@ func Unmarshal(data []byte, p *Packet) error {
 	kind := Kind(binary.LittleEndian.Uint32(data[8:12]))
 
 	buf := strings.Builder{}
-	b := data[12:len(data)-2]
+	b := data[12 : len(data)-2]
 	for i := 0; i < len(b); i++ {
 		if b[i] > unicode.MaxASCII {
 			return errors.New("payload contains non-ASCII characters")
