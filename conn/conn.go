@@ -3,7 +3,7 @@ package conn
 import (
 	"errors"
 	"fmt"
-	"git.tobler.codes/minecraft/go-rcon/packet"
+	"github.com/jltobler/go-rcon/packet"
 	"net"
 )
 

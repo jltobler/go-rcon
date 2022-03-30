@@ -1,8 +1,8 @@
 package rcon
 
 import (
-	"git.tobler.codes/minecraft/go-rcon/conn"
-	"git.tobler.codes/minecraft/go-rcon/packet"
+	"github.com/jltobler/go-rcon/conn"
+	"github.com/jltobler/go-rcon/packet"
 	"strings"
 )
 
