@@ -45,9 +45,9 @@ func New(address string, port uint16, password string) (*RCON, error) {
 }
 
 // WritePacket sends request packet to RCON connection.
-// Since responses can be fragmented across multiple packets
-// all requests are accompanied by a no-op "termination" packet
-// used to indicate that all response packets have been received.
+// Minecraft's server cannot handle queued request packets,
+// so it is important to make sure a request is processed
+// before making an additional request.
 func (r *RCON) WritePacket(p *packet.Packet) error {
 	data, err := packet.Marshal(p)
 	if err != nil {
@@ -58,24 +58,26 @@ func (r *RCON) WritePacket(p *packet.Packet) error {
 		return err
 	}
 
-	tp := packet.New(packet.Termination, "MESSAGE-END")
-	tb, err := packet.Marshal(tp)
-	if err != nil {
-		return err
-	}
-
-	if _, err := r.conn.Write(tb); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-// ReadPackets returns slice of response packets up to the
-// next found "termination" packet. This group of packets
-// represents the response to a single request packet. The
-// ID of each packet will match the corresponding request
-// packet ID.
+// ReadPackets returns slice of response packets following a request.
+//
+// Since responses can be fragmented across multiple packets, all
+// requests are accompanied by a single no-op "termination" packet
+// used to indicate that all response packets have been received.
+//
+// Since Minecraft's server does not support queued request packets
+// (which is very annoying), the "termination" packet cannot be sent
+// until the original request packet has been processed. Upon receiving
+// the first full response packet a "termination" packet is sent allowing
+// for the reader to know when all responses have been received for the
+// initial request.
+//
+// The returned response slice contains all packets up to the
+// "termination" packet. This group of packets represents the response
+// to a single request packet. The ID of each packet will match the
+// corresponding request packet ID.
 func (r *RCON) ReadPackets() ([]*packet.Packet, error) {
 	packets := make([]*packet.Packet, 0)
 	for {
@@ -92,6 +94,19 @@ func (r *RCON) ReadPackets() ([]*packet.Packet, error) {
 			}
 
 			data = append(data, buf[0])
+		}
+
+		// Send termination packet if it has not been sent.
+		if len(packets) == 0 {
+			tp := packet.New(packet.Termination, "MESSAGE-END")
+			tb, err := packet.Marshal(tp)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err := r.conn.Write(tb); err != nil {
+				return nil, err
+			}
 		}
 
 		p := &packet.Packet{}

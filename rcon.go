@@ -1,6 +1,7 @@
 package rcon
 
 import (
+	"fmt"
 	"github.com/jltobler/go-rcon/conn"
 	"github.com/jltobler/go-rcon/packet"
 	"strings"
@@ -33,18 +34,18 @@ func New(address string, port uint16, password string) *Client {
 func (c *Client) Send(command string) (string, error) {
 	rcon, err := conn.New(c.address, c.port, c.password)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create connection: %v", err)
 	}
 	defer rcon.Close()
 
 	req := packet.New(packet.Command, command)
 	if err := rcon.WritePacket(req); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to transmit request: %v", err)
 	}
 
 	resp, err := rcon.ReadPackets()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read response: %v", err)
 	}
 
 	// Responses can be fragmented across multiple packets. Payloads from

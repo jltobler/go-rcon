@@ -25,7 +25,7 @@ import "github.com/jltobler/go-rcon"
 Construct a new RCON client which can be used to access the send function.
 
 ```go
-rconClient, err := rcon.New("localhost", 25575, "password")
+rconClient := rcon.New("localhost", 25575, "password")
 ```
 
 Use the Send function to request commands be remotely executed on the Minecraft server.
