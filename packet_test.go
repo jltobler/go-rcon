@@ -1,9 +1,9 @@
-package packet
+package rcon
 
 import "testing"
 
 func TestMarshalAndUnmarshal(t *testing.T) {
-	p := New(Command, "test")
+	p := NewPacket(CommandPacket, "test")
 
 	data, err := Marshal(p)
 	if err != nil {

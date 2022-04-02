@@ -1,4 +1,4 @@
-package packet
+package rcon
 
 import (
 	"bytes"
@@ -10,12 +10,12 @@ import (
 
 // Enumerates Packet types
 const (
-	Response Kind = iota
+	ResponsePacket Kind = iota
 	_
-	Command
-	Login
+	CommandPacket
+	LoginPacket
 	_
-	Termination
+	TerminationPacket
 	TerminalResponse = "Unknown request 5"
 )
 
@@ -35,9 +35,9 @@ type Packet struct {
 	Payload string
 }
 
-// New creates and returns a Packet. Packet length and ID
+// NewPacket creates and returns a Packet. Packet length and ID
 // are automatically set to satisfy protocol requirements.
-func New(kind Kind, payload string) *Packet {
+func NewPacket(kind Kind, payload string) *Packet {
 	count++
 	return &Packet{
 		Length:  uint32(len(payload) + 10),
