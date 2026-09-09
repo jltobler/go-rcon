@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"strings"
-	"unicode"
 )
 
 // Enumerates Packet types
@@ -22,9 +21,10 @@ const (
 // Packet IDs are typically incremented sequentially. Count tracks
 // the current ID and is incremented when a new Packet is created.
 var (
-	count int32 = 0
+	count int32
 )
 
+// Kind represents the type of RCON packet.
 type Kind uint32
 
 // Packet defines RCON protocol encoding.
@@ -49,7 +49,7 @@ func NewPacket(kind Kind, payload string) *Packet {
 
 // Marshal returns the RCON encoding of Packet p. If Packet p
 // is nil or contains invalid payload, Marshal returns an error.
-func Marshal(p *Packet) ([]byte, error) {
+func Marshal(p *Packet, cs CharSet) ([]byte, error) {
 	if p == nil {
 		return nil, errors.New("nil packet provided")
 	}
@@ -59,8 +59,9 @@ func Marshal(p *Packet) ([]byte, error) {
 	}
 
 	for i := 0; i < len(p.Payload); i++ {
-		if p.Payload[i] > unicode.MaxASCII {
-			return nil, errors.New("payload contains non-ASCII characters")
+		err := ensureCharSet(p.Payload[i], cs)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -86,7 +87,7 @@ func Marshal(p *Packet) ([]byte, error) {
 // Unmarshal parses the RCON encoded Packet data and stores the
 // result in the value pointed to by p. If p is nil or data
 // contains invalid RCON encoding, Unmarshal returns an error.
-func Unmarshal(data []byte, p *Packet) error {
+func Unmarshal(data []byte, p *Packet, cs CharSet) error {
 	if p == nil {
 		return errors.New("nil packet provided")
 	}
@@ -109,8 +110,9 @@ func Unmarshal(data []byte, p *Packet) error {
 	buf := strings.Builder{}
 	b := data[12 : len(data)-2]
 	for i := 0; i < len(b); i++ {
-		if b[i] > unicode.MaxASCII {
-			return errors.New("payload contains non-ASCII characters")
+		err := ensureCharSet(b[i], cs)
+		if err != nil {
+			return err
 		}
 		buf.WriteByte(b[i])
 	}
@@ -122,4 +124,9 @@ func Unmarshal(data []byte, p *Packet) error {
 	p.Payload = payload
 
 	return nil
+}
+
+// ensureCharSet checks if the given byte is within the specified character set.
+func ensureCharSet(b byte, cs CharSet) error {
+	return cs.ValidateByte(b)
 }

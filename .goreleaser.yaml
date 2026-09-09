@@ -1,0 +1,19 @@
+version: 2
+project_name: go-rcon
+
+before:
+  hooks:
+    - go mod tidy
+
+# Disable binary building since this is a pure library
+builds:
+  - skip: true
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - Merge pull request
+      - Merge branch

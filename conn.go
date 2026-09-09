@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	// DefaultPort is the default RCON server port for Minecraft.
 	DefaultPort uint16 = 25575
 )
 
@@ -23,13 +24,14 @@ type Conn struct {
 	mutex    sync.Mutex
 	packets  chan *Packet
 	isClosed bool
+	charSet  CharSet
 }
 
 // Dial connects and authenticates to the specified URL.
 //
 // The underlying transport layer connection is created along
 // with the configured RCON connection.
-func Dial(addr, password string) (*Conn, error) {
+func Dial(addr, password string, cs CharSet) (*Conn, error) {
 	u, err := url.Parse(addr)
 	if err != nil {
 		return nil, err
@@ -51,19 +53,20 @@ func Dial(addr, password string) (*Conn, error) {
 		return nil, err
 	}
 
-	return NewConn(c, password)
+	return NewConn(c, password, cs)
 }
 
 // NewConn wraps transport layer connection with RCON configuration.
 //
 // RCON authentication is performed as part of connection configuration.
 // Failed authentication closes the transport layer connection.
-func NewConn(c net.Conn, password string) (*Conn, error) {
+func NewConn(c net.Conn, password string, cs CharSet) (*Conn, error) {
 	conn := &Conn{
 		conn:     c,
 		mutex:    sync.Mutex{},
 		packets:  make(chan *Packet),
 		isClosed: false,
+		charSet:  cs,
 	}
 
 	conn.start()
@@ -193,7 +196,7 @@ func (c *Conn) readPackets() ([]*Packet, error) {
 		// Send termination packet if it has not been sent.
 		if len(packets) == 0 {
 			tp := NewPacket(TerminationPacket, "MESSAGE-END")
-			tb, _ := Marshal(tp)
+			tb, _ := Marshal(tp, c.charSet)
 
 			if _, err := c.conn.Write(tb); err != nil {
 				return nil, fmt.Errorf("failed writing termination packet: %w", err)
@@ -228,7 +231,7 @@ func (c *Conn) readPacket() (*Packet, error) {
 	}
 
 	p := &Packet{}
-	if err := Unmarshal(data, p); err != nil {
+	if err := Unmarshal(data, p, c.charSet); err != nil {
 		return nil, err
 	}
 
@@ -241,7 +244,7 @@ func (c *Conn) readPacket() (*Packet, error) {
 // so it is important to make sure a request is processed
 // before making an additional request.
 func (c *Conn) writePacket(p *Packet) error {
-	data, err := Marshal(p)
+	data, err := Marshal(p, c.charSet)
 	if err != nil {
 		return err
 	}

@@ -38,3 +38,48 @@ Use the Send function to request commands be remotely executed on the Minecraft 
 ```go
 rconClient, err := rconClient.Send("time set day")
 ```
+
+Use the `CharSet` type to specify the required character set for the RCON connection. This constraints sent and received data to the specified character set.
+
+```go
+rconClient := rcon.NewClient("rcon://localhost:25575", "password", WithOptions(rcon.CharSetASCII))
+```
+For older Minecraft versions use `CharSetASCII`. This is also the default character set when no options are specified.
+
+For newer Minecraft versions or those that sends Minecraft Color codes such as `§3` use `CharSetLatin1` or for servers understanding UTF8 you can use `CharSetUTF8`.
+
+## Development
+
+### Prerequisites
+
+- Go (defined in `go.mod`)
+- [`golangci-lint`](https://golangci-lint.run/)
+
+### Available Commands
+
+A `Makefile` is provided to simplify common development operations:
+
+- **Run tests:**
+  ```sh
+  make test
+  ```
+- **Run tests with coverage:**
+  ```sh
+  make test-coverage
+  ```
+- **Run linter:**
+  ```sh
+  make lint
+  ```
+- **Format code:**
+  ```sh
+  make fmt
+  ```
+- **Tidy Go modules:**
+  ```sh
+  make tidy
+  ```
+- **Clean build artifacts:**
+  ```sh
+  make clean
+  ```

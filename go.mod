@@ -1,3 +1,3 @@
-module github.com/jltobler/go-rcon
+module github.com/discohaus/go-rcon
 
-go 1.17
+go 1.27
